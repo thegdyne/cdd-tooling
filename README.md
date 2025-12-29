@@ -51,39 +51,30 @@ This precision eliminates guesswork and enables targeted iteration.
 ## The Development Loop
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                                                             │
-│   Reference ──► Analyze ──► Baseline                        │
-│       │                         │                           │
-│       │                         ▼                           │
-│       │                   Write Contract                    │
-│       │                         │                           │
-│       │                         ▼                           │
-│       │                    Implement                        │
-│       │                         │                           │
-│       │                         ▼                           │
-│       │              Analyze Output ──► Compare             │
-│       │                                    │                │
-│       │                         ┌─────────┴─────────┐       │
-│       │                         │                   │       │
-│       │                    Deviations?          Match?      │
-│       │                         │                   │       │
-│       │                         ▼                   ▼       │
-│       │                   Fix & Iterate         Done        │
-│       │                         │                           │
-│       └─────────────────────────┘                           │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│   Reference ──► Analyze ──► Baseline                            │
+│       │                         │                               │
+│       │                         ▼                               │
+│       │                   Write Contract                        │
+│       │                         │                               │
+│       │                         ▼                               │
+│       │                    Implement                            │
+│       │                         │                               │
+│       │                         ▼                               │
+│       │              Analyze Output ──► Compare                 │
+│       │                                    │                    │
+│       │                         ┌─────────┴─────────┐           │
+│       │                         │                   │           │
+│       │                    Deviations?          Match?          │
+│       │                         │                   │           │
+│       │                         ▼                   ▼           │
+│       │                   Fix & Iterate         Done            │
+│       │                         │                               │
+│       └─────────────────────────┘                               │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
-
-1. **Analyze reference** — Tool extracts structure at micro-detail level
-2. **Baseline** — Tool output becomes the spec
-3. **Contract** — Requirements reference specific baseline values
-4. **Implement** — Build toward the contract
-5. **Analyze output** — Same tool on what you built
-6. **Compare** — Deviations from baseline are the feedback
-7. **Iterate** — Fix specific deviations until acceptable
-8. **Done** — Human signs off
 
 ---
 
@@ -103,13 +94,6 @@ CDD is a collaboration between human and AI:
 - Claude without tooling = guessing from descriptions
 - Human without Claude's analysis = imprecise feedback
 - Together = spec emerges from dialogue
-
-**The negotiation:**
-1. Claude analyzes, reports what it sees
-2. Human confirms or adjusts ("focus on X, ignore Y")
-3. Claude re-analyzes with calibration
-4. Both agree on what "done" means
-5. Implementation proceeds with shared understanding
 
 ---
 
@@ -151,45 +135,10 @@ See [SPEC.md](SPEC.md#appendix-anti-patterns) for detailed examples.
 
 ---
 
-## Installation
-
-```bash
-# Via pipx (recommended for CLI)
-pipx install git+https://github.com/thegdyne/cdd.git@v1.1.5
-
-# Via pip
-pip install git+https://github.com/thegdyne/cdd.git@v1.1.5
-```
-
-Verify:
-
-```bash
-cdd spec --version
-# 1.1.5
-```
-
----
-
-## Using CDD in Your Project
-
-### 1. Analyze your reference (Phase 0)
-
-Before writing contracts, establish the baseline:
-
-```bash
-# Example: analyzing a PDF reference
-cdd analyze reference/original-form.pdf -o analysis/baseline/
-
-# Review what was captured
-cat analysis/baseline/elements.md
-```
-
-Confirm the analysis captures what matters. If not, improve the tool or adjust its parameters.
-
-### 2. Create a project contract
+## Contract Example
 
 ```yaml
-# my-project/contracts/project.yaml
+# contracts/project.yaml
 project: my-project
 cdd_spec: 1.1.5
 version: 1.0.0
@@ -204,20 +153,14 @@ success_criteria:
 
 components:
   - component_a
-  - component_b
 ```
 
-### 3. Write component contracts
-
-Ground requirements in baseline values:
-
 ```yaml
-# my-project/contracts/component_a.yaml
+# contracts/component_a.yaml
 contract: component_a
 version: 1.0.0
 status: draft
-description: |
-  What this component does.
+description: What this component does.
 
 runner:
   executor: python
@@ -230,7 +173,6 @@ requirements:
     description: Input fields match reference dimensions
     acceptance_criteria:
       - Field height 21pt (from baseline element R1_0)
-      - Field width within 2pt of reference
 
 tests:
   - id: T001
@@ -248,74 +190,11 @@ tests:
         tolerance: 1
 ```
 
-### 4. Implement and compare
-
-```bash
-# Run tests
-cdd test contracts/
-
-# Analyze your output
-cdd analyze output/generated.pdf -o analysis/output/
-
-# Compare to baseline
-cdd compare analysis/baseline/ analysis/output/
-```
-
-### 5. Iterate until deviations are acceptable
-
-The comparison shows exact deviations:
-```
-✗ Element spacing: baseline 15pt, output 12pt (deviation: 3pt)
-✓ Field dimensions: match within tolerance
-```
-
-Fix specific issues. Re-run. Repeat until clean or within agreed tolerance.
-
-### 6. Freeze when stable
-
-Change `status: draft` → `status: frozen` in your contracts. Now any changes require a version bump.
-
----
-
-## CLI Reference
-
-```bash
-# Show spec/tool version
-cdd spec --version
-
-# Print full spec text
-cdd spec --print
-
-# Analyze source artifacts (PDF, HTML)
-cdd analyze <source> -o <output-dir>
-cdd analyze reference.pdf -o analysis/baseline/
-cdd analyze wireframe.html -o analysis/baseline/
-
-# Compare two analyses
-cdd compare <baseline-dir> <output-dir>
-cdd compare analysis/baseline/ analysis/output/
-
-# Lint contracts (exits 1 if errors)
-cdd lint contracts/
-cdd lint contracts/ --strict
-cdd lint contracts/ --json
-
-# Run tests (exits 1 if failures)
-cdd test contracts/
-cdd test contracts/ --var target=foo
-cdd test contracts/ --only T001
-cdd test contracts/ --json
-
-# Coverage report
-cdd coverage contracts/
-cdd coverage contracts/ --strict
-```
-
 ---
 
 ## Project Structure
 
-Recommended layout:
+Recommended layout for CDD projects:
 
 ```
 my-project/
@@ -335,37 +214,30 @@ my-project/
 
 ---
 
-## Version Compatibility
+## Tooling
 
-The `cdd_spec` field in your project contract declares which CDD spec version you're targeting.
+The reference implementation of CDD tooling is available at:
 
-| Scenario | Behavior |
-|----------|----------|
-| Major mismatch (project: 2.x, tool: 1.x) | **Error** — incompatible |
-| Minor/patch mismatch | **Warning** — should be compatible |
-| Exact match required | Use `--require-exact-spec` flag |
+**[github.com/thegdyne/cdd-tooling](https://github.com/thegdyne/cdd-tooling)**
+
+```bash
+pip install cdd-tooling
+```
 
 ---
 
 ## Documentation
 
-- [SPEC.md](SPEC.md) — The normative specification (contract schema, assertion operators, report format)
-- [CDD_ANALYSIS_AND_IMPROVEMENTS.md](CDD_ANALYSIS_AND_IMPROVEMENTS.md) — Implementation status and improvement proposals
-- [ROADMAP.md](ROADMAP.md) — Implementation status and future plans
-- [CHANGELOG.md](CHANGELOG.md) — Version history and compatibility notes
+- **[SPEC.md](SPEC.md)** — The normative specification (contract schema, assertion operators, report format)
+- **[CHANGELOG.md](CHANGELOG.md)** — Spec version history
 
 ---
 
-## Executors
+## Spec Version
 
-CDD supports multiple executors for different languages/environments:
+Current: **1.1.5** (frozen)
 
-| Executor | Actions | Use Case |
-|----------|---------|----------|
-| `python` | `call`, `call_n` | Python functions |
-| `shell` | `shell` | CLI tools, scripts |
-| `static` | (assertions only) | AST analysis |
-| `sclang` | `render_nrt` | SuperCollider audio |
+The `cdd_spec` field in contracts declares which spec version they target. Tooling validates compatibility.
 
 ---
 

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.25"]
 build-backend = "hatchling.build"
 
 [project]
@@ -7,34 +7,39 @@ name = "cdd-tooling"
 version = "0.1.0"
 description = "Reference implementation of Contract-Driven Development tooling"
 readme = "README.md"
-license = "MIT"
 requires-python = ">=3.10"
-authors = [
-    { name = "Gareth Dyne" }
-]
-keywords = ["cdd", "contracts", "testing", "development"]
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-]
+license = { text = "MIT" }
+authors = [{ name = "Gareth Dyne" }]
+keywords = ["contracts", "testing", "validation", "cdd", "tooling"]
 dependencies = [
-    "pyyaml>=6.0",
-    "rich>=13.0",
+  "pyyaml>=6.0.1",
+  "jsonschema>=4.22.0",
+  "referencing>=0.35.1",
+  "rich>=13.7.1",
 ]
 
 [project.optional-dependencies]
-pdf = ["pymupdf>=1.23"]
-dev = ["pytest>=7.0", "pytest-cov"]
+dev = [
+  "pytest>=8.2.0",
+  "ruff>=0.6.0",
+  "mypy>=1.11.0",
+]
+pdf = [
+  "pymupdf>=1.23.0",
+]
+sclang = []
 
 [project.scripts]
 cdd = "cdd_tooling.cli:main"
 contract-lint = "cdd_tooling.cli:contract_lint"
 contract-test = "cdd_tooling.cli:contract_test"
 contract-coverage = "cdd_tooling.cli:contract_coverage"
+
+[project.entry-points."cdd_tooling.executors"]
+python = "cdd_tooling.executors.python_exec:PythonExecutor"
+shell = "cdd_tooling.executors.shell_exec:ShellExecutor"
+static = "cdd_tooling.executors.static_exec:StaticExecutor"
+sclang = "cdd_tooling.executors.sclang_exec:SclangExecutor"
 
 [project.urls]
 Homepage = "https://github.com/thegdyne/cdd-tooling"
@@ -43,3 +48,13 @@ Repository = "https://github.com/thegdyne/cdd-tooling"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cdd_tooling"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
