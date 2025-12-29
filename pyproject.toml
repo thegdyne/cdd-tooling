@@ -35,7 +35,7 @@ contract-lint = "cdd_tooling.cli:contract_lint"
 contract-test = "cdd_tooling.cli:contract_test"
 contract-coverage = "cdd_tooling.cli:contract_coverage"
 
-[project.entry-points."cdd_tooling.executors"]
+[project.entry-points."cdd.executors"]
 python = "cdd_tooling.executors.python_exec:PythonExecutor"
 shell = "cdd_tooling.executors.shell_exec:ShellExecutor"
 static = "cdd_tooling.executors.static_exec:StaticExecutor"
@@ -58,3 +58,4 @@ select = ["E", "F", "I", "B", "UP"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
