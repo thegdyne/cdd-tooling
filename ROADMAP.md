@@ -3,6 +3,7 @@
 Future additions to the Contract-Driven Development spec and tooling.
 
 **Applies to spec version:** 1.1.5  
+**Tooling version:** 0.1.1  
 **Last updated:** 2025-12-29
 
 ---
@@ -13,7 +14,8 @@ Future additions to the Contract-Driven Development spec and tooling.
 |------|--------|-------|
 | `cdd analyze` (PDF) | ✅ Done (v1.1.4) | PyMuPDF extracts images + structure |
 | `cdd analyze` (HTML) | ✅ Done (v1.1.5) | Element counts, CSS classes, required elements |
-| `cdd compare` | ✅ Done (v1.1.4) | Compare two analyses |
+| `cdd compare` (PDF) | ✅ Done (v1.1.4) | Compare two PDF analyses |
+| `cdd compare` (HTML) | ✅ Done (v0.1.1) | Compare two HTML analyses |
 | Mandatory Gates in spec | ✅ Done (v1.1.5) | G0-G3 definitions, sequence diagram |
 | Anti-Patterns in spec | ✅ Done (v1.1.5) | AP1-AP6 with examples |
 | Process Checkpoints | ✅ Done (v1.1.5) | Table of verification points |
@@ -41,12 +43,14 @@ Future additions to the Contract-Driven Development spec and tooling.
 | Report invariants | ✅ Done (v1.0.10) | Status values, assertions array, required fields |
 | AST stability note | ✅ Done (v1.0.10) | Only calls/bus_reads stable in v1.0 |
 | `contract-lint` | ✅ Done | Schema validation + requirement coverage |
-| Python executor | 🔲 TODO | `call`, `call_n`, step envelope |
-| `sclang` executor | 🔲 TODO | `render_nrt` + metrics JSON output |
-| Static executor | 🔲 TODO | `sclang_ast` parser (MVP); `python_ast` later |
-| Report writer | 🔲 TODO | JSON output per schema_version 1.0 (core MVP) |
+| Python executor | ✅ Done | `call`, `call_n`, step envelope, timing |
+| Shell executor | ✅ Done | Command execution with stdout/stderr capture |
+| Static executor (file scan) | ✅ Done | `matches`/`not_matches` regex assertions |
+| Report writer | ✅ Done | JSON output per schema_version 1.0 |
+| `sclang` executor | ⚠️ Stub | Placeholder - returns "not_implemented" |
+| Static executor (AST) | ⚠️ Stub | Returns empty AST - no parser implemented |
 
-**Goal:** Run `contract-test` against a single Python contract and get a valid single-target `report.json` (no matrix required for MVP).
+**Goal:** Run `contract-test` against a single Python contract and get a valid single-target `report.json`. ✅ Achieved
 
 ---
 
@@ -68,6 +72,8 @@ Future additions to the Contract-Driven Development spec and tooling.
 
 | Item | Status | Notes |
 |------|--------|-------|
+| `sclang` executor (full) | 🔲 TODO | NRT render + metrics JSON output |
+| Static executor (AST) | 🔲 TODO | `sclang_ast` parser; `python_ast` later |
 | `contract-scaffold` | 🔲 TODO | Generate implementation stubs from contract |
 | `schema` operator | 🔲 TODO | Validate object shape against schema |
 | `all_lt` / `all_gt` quantifiers | 🔲 TODO | Assert condition over all array elements |
@@ -202,4 +208,4 @@ To propose additions:
 
 ---
 
-*Roadmap for CDD spec v1.1.5*
+*Roadmap for CDD spec v1.1.5, tooling v0.1.1*

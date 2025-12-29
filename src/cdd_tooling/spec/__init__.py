@@ -1,27 +1,31 @@
-# src/cdd/spec/__init__.py
+# src/cdd_tooling/spec/__init__.py
 """Spec and version loading utilities."""
 from __future__ import annotations
 from importlib import metadata
 from pathlib import Path
 
+# The CDD spec version this tooling implements
+SPEC_VERSION = "1.1.5"
+
 
 def get_tool_version() -> str:
-    """Get version from installed package metadata."""
+    """Get the CDD spec version (what this tooling implements)."""
+    return SPEC_VERSION
+
+
+def get_tooling_version() -> str:
+    """Get the tooling package version."""
     try:
-        return metadata.version("cdd")
+        return metadata.version("cdd-tooling")
     except metadata.PackageNotFoundError:
-        # Development mode - try VERSION file
-        version_file = Path(__file__).parent.parent.parent.parent / "VERSION"
-        if version_file.exists():
-            return version_file.read_text(encoding="utf-8").strip()
-        return "0.0.0"
+        # Development mode - read from pyproject.toml
+        return "0.1.1"
 
 
 def load_schema_version() -> str:
     """Return the report schema version (coupled to spec version for v1.x)."""
-    v = get_tool_version()
-    parts = v.split(".")
-    return f"{parts[0]}.{parts[1]}" if len(parts) >= 2 else "1.0"
+    parts = SPEC_VERSION.split(".")
+    return f"{parts[0]}.0" if len(parts) >= 1 else "1.0"
 
 
 def load_spec_text() -> str:
@@ -29,11 +33,11 @@ def load_spec_text() -> str:
     # Try installed package data first
     try:
         from importlib.resources import files
-        return files("cdd.spec").joinpath("SPEC.md").read_text(encoding="utf-8")
+        return files("cdd_tooling.spec").joinpath("SPEC.md").read_text(encoding="utf-8")
     except (ImportError, FileNotFoundError, TypeError):
         pass
     # Fallback to repo root
     spec_file = Path(__file__).parent.parent.parent.parent / "SPEC.md"
     if spec_file.exists():
         return spec_file.read_text(encoding="utf-8")
-    return "(SPEC.md not found)"
+    return "(SPEC.md not found - see https://github.com/thegdyne/cdd)"

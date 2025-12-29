@@ -62,7 +62,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_analyze.add_argument("--json", action="store_true", help="Emit machine-readable JSON summary")
 
     # cdd compare (NEW - Compare two analyses)
-    p_compare = sub.add_parser("compare", help="Compare two PDF analyses (original vs generated)")
+    p_compare = sub.add_parser("compare", help="Compare two analyses (PDF or HTML)")
     p_compare.add_argument("original", help="Original analysis directory or structure.json")
     p_compare.add_argument("generated", help="Generated analysis directory or structure.json")
     p_compare.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
@@ -165,8 +165,7 @@ def cmd_analyze(args: argparse.Namespace) -> int:
 
 
 def cmd_compare(args: argparse.Namespace) -> int:
-    """Compare two PDF analyses."""
-    from cdd_tooling.analyze.pdf import compare_analyses
+    """Compare two analyses (PDF or HTML)."""
     
     def load_analysis(path_str: str) -> Dict[str, Any]:
         p = Path(path_str)
@@ -183,22 +182,42 @@ def cmd_compare(args: argparse.Namespace) -> int:
         console.print(f"[red]Error: {e}[/red]")
         return 1
     
-    diff = compare_analyses(original, generated)
+    # Route based on analysis type
+    orig_type = original.get("type", "pdf")
+    gen_type = generated.get("type", "pdf")
     
-    if args.json:
-        console.print_json(json.dumps(diff))
+    if orig_type != gen_type:
+        console.print(f"[red]Error: Cannot compare {orig_type} with {gen_type}[/red]")
+        return 1
+    
+    if orig_type == "html":
+        from cdd_tooling.analyze.html import compare_html_analyses
+        diff = compare_html_analyses(original, generated)
+        if args.json:
+            console.print_json(json.dumps(diff))
+        else:
+            _print_html_comparison(diff, original, generated)
+        # Check for issues
+        has_issues = not diff.get("required_elements_match", True) or any(
+            not v["match"] for v in diff.get("element_counts", {}).values()
+        )
     else:
-        _print_comparison(diff, original, generated)
+        from cdd_tooling.analyze.pdf import compare_analyses
+        diff = compare_analyses(original, generated)
+        if args.json:
+            console.print_json(json.dumps(diff))
+        else:
+            _print_comparison(diff, original, generated)
+        # Check for issues
+        has_issues = not diff.get("page_size_match", True) or any(
+            not v["match"] for v in diff.get("element_counts", {}).values()
+        )
     
-    # Return 1 if there are mismatches
-    has_issues = not diff["page_size_match"] or any(
-        not v["match"] for v in diff["element_counts"].values()
-    )
     return 1 if has_issues else 0
 
 
 def _print_comparison(diff: Dict[str, Any], original: Dict[str, Any], generated: Dict[str, Any]) -> None:
-    """Print comparison results."""
+    """Print PDF comparison results."""
     console.print(Panel("[bold]PDF Comparison: Original vs Generated[/bold]"))
     
     # Page size
@@ -230,6 +249,46 @@ def _print_comparison(diff: Dict[str, Any], original: Dict[str, Any], generated:
         orig_fields = len(original.get("layout", {}).get("form_fields", []))
         gen_fields = len(generated.get("layout", {}).get("form_fields", []))
         console.print(f"\nForm fields detected: Original={orig_fields}, Generated={gen_fields}")
+
+
+def _print_html_comparison(diff: Dict[str, Any], original: Dict[str, Any], generated: Dict[str, Any]) -> None:
+    """Print HTML comparison results."""
+    console.print(Panel("[bold]HTML Comparison: Original vs Generated[/bold]"))
+    
+    # Required elements
+    if diff.get("required_elements_match", True):
+        console.print("[green]✓[/green] Required elements match")
+    else:
+        console.print("[red]✗[/red] Required elements mismatch:")
+        for key, vals in diff.get("required_elements_diff", {}).items():
+            console.print(f"    {key}: original={vals['original']}, generated={vals['generated']}")
+    
+    # Element counts
+    t = Table(title="Element Counts")
+    t.add_column("Tag")
+    t.add_column("Original", justify="right")
+    t.add_column("Generated", justify="right")
+    t.add_column("Match")
+    
+    for tag, counts in diff.get("element_counts", {}).items():
+        status = "[green]✓[/green]" if counts["match"] else "[red]✗[/red]"
+        t.add_row(
+            tag,
+            str(counts["original"]),
+            str(counts["generated"]),
+            status
+        )
+    console.print(t)
+    
+    # CSS class changes
+    added = diff.get("classes_added", [])
+    removed = diff.get("classes_removed", [])
+    if added:
+        console.print(f"\n[yellow]Classes added:[/yellow] {', '.join(added[:10])}" + 
+                      (f" (+{len(added)-10} more)" if len(added) > 10 else ""))
+    if removed:
+        console.print(f"[yellow]Classes removed:[/yellow] {', '.join(removed[:10])}" +
+                      (f" (+{len(removed)-10} more)" if len(removed) > 10 else ""))
 
 
 def cmd_test(args: argparse.Namespace) -> int:
