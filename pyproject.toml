@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cdd-tooling"
+version = "0.1.0"
+description = "Reference implementation of Contract-Driven Development tooling"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Gareth Dyne" }
+]
+keywords = ["cdd", "contracts", "testing", "development"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "pyyaml>=6.0",
+    "rich>=13.0",
+]
+
+[project.optional-dependencies]
+pdf = ["pymupdf>=1.23"]
+dev = ["pytest>=7.0", "pytest-cov"]
+
+[project.scripts]
+cdd = "cdd_tooling.cli:main"
+contract-lint = "cdd_tooling.cli:contract_lint"
+contract-test = "cdd_tooling.cli:contract_test"
+contract-coverage = "cdd_tooling.cli:contract_coverage"
+
+[project.urls]
+Homepage = "https://github.com/thegdyne/cdd-tooling"
+Documentation = "https://github.com/thegdyne/cdd"
+Repository = "https://github.com/thegdyne/cdd-tooling"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cdd_tooling"]
