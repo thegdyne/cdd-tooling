@@ -173,7 +173,7 @@ def cmd_analyze(args: argparse.Namespace) -> int:
 
 
 def cmd_compare(args: argparse.Namespace) -> int:
-    """Compare two analyses (PDF or HTML)."""
+    """Compare two analyses (PDF, HTML, or source reference)."""
     
     def load_analysis(path_str: str) -> Dict[str, Any]:
         p = Path(path_str)
@@ -209,6 +209,15 @@ def cmd_compare(args: argparse.Namespace) -> int:
         has_issues = not diff.get("required_elements_match", True) or any(
             not v["match"] for v in diff.get("element_counts", {}).values()
         )
+    elif orig_type == "source_reference":
+        from cdd_tooling.analyze.source import compare_source_analyses
+        diff = compare_source_analyses(original, generated)
+        if args.json:
+            console.print_json(json.dumps(diff))
+        else:
+            _print_source_comparison(diff)
+        # Check for issues - source references only match if hash matches
+        has_issues = not diff.get("match", False)
     else:
         from cdd_tooling.analyze.pdf import compare_analyses
         diff = compare_analyses(original, generated)
@@ -379,6 +388,14 @@ def _print_coverage(cov: Dict[str, Any]) -> None:
 
 def _print_analysis(result: Dict[str, Any]) -> None:
     """Print analysis results in human-readable format."""
+    analysis_type = result.get("type", "pdf")
+    
+    # Source reference has different output structure
+    if analysis_type == "source_reference":
+        _print_source_analysis(result)
+        return
+    
+    # PDF/HTML analysis output
     summary = result.get("summary", {})
     
     body = Table(show_header=False, box=None)
@@ -421,6 +438,59 @@ def _print_analysis(result: Dict[str, Any]) -> None:
     else:
         console.print(f"  2. Reference elements in contracts with [bold]source_ref: SRC001#element_id[/bold]")
         console.print(f"  3. Run [bold]cdd validate[/bold] to check source references")
+
+
+def _print_source_analysis(result: Dict[str, Any]) -> None:
+    """Print source reference analysis results."""
+    body = Table(show_header=False, box=None)
+    body.add_row("Source", result.get("source_name", ""))
+    body.add_row("Type", result.get("file_type", ""))
+    body.add_row("Lines", str(result.get("line_count", 0)))
+    body.add_row("Size", f"{result.get('size_bytes', 0)} bytes")
+    body.add_row("Hash", f"{result.get('hash', '')[:12]}...")
+    body.add_row("Output", result.get("output_dir", ""))
+    console.print(Panel(body, title="[bold green]CDD Analyze - Source Reference[/bold green]"))
+    
+    console.print()
+    console.print("[dim]Files created:[/dim]")
+    for f in result.get("files", []):
+        console.print(f"  • {f}")
+    
+    console.print()
+    console.print("[dim]Next steps:[/dim]")
+    console.print(f"  1. Review [bold]{result.get('output_dir')}/source{_get_ext(result)}[/bold] to understand the reference")
+    console.print(f"  2. Fill in [bold]{result.get('output_dir')}/PATTERNS.md[/bold] with patterns to preserve")
+    console.print(f"  3. Write contract based on documented patterns")
+    console.print(f"  4. Implement against contract")
+
+
+def _get_ext(result: Dict[str, Any]) -> str:
+    """Get file extension from result."""
+    files = result.get("files", [])
+    for f in files:
+        if f.startswith("source"):
+            return f[6:]  # Remove "source" prefix
+    return ""
+
+
+def _print_source_comparison(diff: Dict[str, Any]) -> None:
+    """Print source reference comparison results."""
+    console.print(Panel("[bold]Source Reference Comparison[/bold]"))
+    
+    if diff.get("match"):
+        console.print("[green]✓[/green] Files are identical")
+    else:
+        console.print("[yellow]✗[/yellow] Files differ")
+        console.print(f"  Original hash:  {diff.get('original_hash', '')[:12]}...")
+        console.print(f"  Generated hash: {diff.get('generated_hash', '')[:12]}...")
+        console.print(f"  Original lines:  {diff.get('original_lines', 0)}")
+        console.print(f"  Generated lines: {diff.get('generated_lines', 0)}")
+    
+    if not diff.get("file_type_match"):
+        console.print(f"[red]✗[/red] File type mismatch: {diff.get('original_type')} vs {diff.get('generated_type')}")
+    
+    console.print()
+    console.print(f"[dim]{diff.get('summary', '')}[/dim]")
 
 
 def _print_report(report: Dict[str, Any]) -> None:

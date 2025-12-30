@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from cdd_tooling.analyze.source import is_source_file, analyze_source as analyze_source_ref
+
 
 def analyze_source(source_path: Path, output_dir: Path) -> Dict[str, Any]:
     """
@@ -15,6 +17,8 @@ def analyze_source(source_path: Path, output_dir: Path) -> Dict[str, Any]:
     
     Supported types:
     - PDF: extract images, detect rectangles/lines/text positions
+    - HTML: extract element structure, classes, required elements
+    - Source (py, js, scd, etc.): capture reference snapshot + patterns template
     - Image: basic shape detection (future)
     
     Returns:
@@ -34,6 +38,8 @@ def analyze_source(source_path: Path, output_dir: Path) -> Dict[str, Any]:
     elif suffix in ('.html', '.htm'):
         from cdd_tooling.analyze.html import analyze_html
         return analyze_html(source_path, output_dir)
+    elif is_source_file(source_path):
+        return analyze_source_ref(source_path, output_dir)
     elif suffix in ('.png', '.jpg', '.jpeg', '.gif', '.webp'):
         # Future: image analysis
         raise NotImplementedError(f"Image analysis not yet implemented: {suffix}")

@@ -2,6 +2,37 @@
 
 Tooling implementation changes. For spec changes, see [CDD Spec CHANGELOG](https://github.com/thegdyne/cdd/blob/main/CHANGELOG.md).
 
+## [0.1.2] - 2025-12-30
+
+### Added
+- Source reference handler (`cdd analyze *.py`, `*.js`, `*.scd`, etc.)
+- Captures frozen snapshot of source files for reference-based development
+- Generates `PATTERNS.md` template for documenting patterns to preserve
+- Source comparison via `cdd compare` (hash-based matching)
+
+### Supported Source Types
+| Extension | Type |
+|-----------|------|
+| `.py`, `.pyi` | Python |
+| `.js`, `.jsx`, `.ts`, `.tsx` | JavaScript/TypeScript |
+| `.scd`, `.sc` | SuperCollider |
+| `.yaml`, `.yml`, `.json`, `.toml` | Config |
+| `.sh`, `.bash`, `.zsh` | Shell |
+| `.md`, `.txt`, `.css`, `.sql` | Text/Markup |
+| `.rs`, `.go`, `.rb`, `.lua`, `.c`, `.cpp`, `.java`, `.swift`, `.kt` | Other languages |
+
+### Output Structure
+```
+analysis/<name>/
+├── source.<ext>       # Frozen snapshot
+├── structure.json     # Metadata (hash, timestamp, line count)
+├── PATTERNS.md        # Pattern template (fill in)
+└── elements.md        # Summary
+```
+
+### Implements
+- CDD Spec 1.1.5
+
 ## [0.1.1] - 2025-12-29
 
 ### Fixed

@@ -51,7 +51,7 @@ cdd compare analysis/baseline/ analysis/output/
 |---------|-------------|
 | `cdd spec --version` | Show spec/tool version |
 | `cdd paths <contracts/>` | Verify file paths in contracts resolve |
-| `cdd analyze <file> -o <dir>` | Extract baseline from PDF/HTML |
+| `cdd analyze <file> -o <dir>` | Extract baseline from PDF/HTML/source |
 | `cdd compare <baseline> <output>` | Compare two analyses |
 | `cdd lint <contracts/>` | Validate contract schema + coverage |
 | `cdd test <contracts/>` | Run contract tests |
@@ -81,22 +81,52 @@ cdd analyze form.pdf -o analysis/
 # HTML analysis
 cdd analyze wireframe.html -o analysis/
 
-# Output includes:
-#   - structure.json (element catalog)
-#   - page images (for PDF)
-#   - elements.md (human-readable summary)
-#   - layout.md (form field associations)
+# Source reference (Python, JS, SuperCollider, etc.)
+cdd analyze src/gui/window.py -o analysis/baseline/
+
+# Output varies by type:
+#   PDF/HTML: structure.json, elements.md, layout.md
+#   Source:   source.<ext>, structure.json, PATTERNS.md, elements.md
 ```
+
+#### Source Reference Handler
+
+For readable source files, captures a frozen snapshot for reference-based development:
+
+```bash
+cdd analyze src/existing_module.py -o analysis/baseline/
+```
+
+Creates:
+```
+analysis/baseline/
+├── source.py          # Frozen snapshot of reference
+├── structure.json     # Metadata (hash, timestamp, lines)
+├── PATTERNS.md        # Pattern template (fill in)
+└── elements.md        # Summary
+```
+
+**Supported types:** `.py`, `.js`, `.ts`, `.jsx`, `.tsx`, `.scd`, `.sc`, `.yaml`, `.json`, `.sh`, `.md`, `.css`, `.sql`, `.rs`, `.go`, `.rb`, `.lua`, `.c`, `.cpp`, `.java`, `.swift`, `.kt`
+
+**Workflow:**
+1. Analyze existing code: `cdd analyze reference.py -o analysis/baseline/`
+2. Fill in `PATTERNS.md` with patterns to preserve
+3. Write contract based on documented patterns
+4. Implement against contract
 
 ### Compare
 
 ```bash
-# Compare baseline to output (PDF or HTML)
+# Compare baseline to output (PDF, HTML, or source)
 cdd compare analysis/baseline/ analysis/output/
 
-# Shows exact deviations:
+# PDF/HTML: Shows exact deviations
 #   ✗ Element spacing: baseline 15pt, output 12pt (deviation: 3pt)
 #   ✓ Field dimensions: match within tolerance
+
+# Source: Hash-based comparison
+#   ✓ Files are identical
+#   ✗ Files differ - use contracts to verify structural requirements
 
 # JSON output for CI
 cdd compare analysis/baseline/ analysis/output/ --json

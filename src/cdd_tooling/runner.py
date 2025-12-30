@@ -551,17 +551,25 @@ class ContractRunner:
         return d
 
     def _step_result_to_dict(self, sr: StepResult) -> Dict[str, Any]:
+        stdout_str = sr.stdout or ""
+        # Try to parse stdout as int for convenience
+        stdout_int = None
+        try:
+            stdout_int = int(stdout_str.strip())
+        except (ValueError, AttributeError):
+            pass
+
         return {
             "ok": sr.ok,
             "value": sr.value,
             "error_code": sr.error_code,
             "message": sr.message,
             "meta": sr.meta or {},
-            "stdout": sr.stdout or "",
+            "stdout": stdout_str,
+            "stdout_int": stdout_int,
             "stderr": sr.stderr or "",
             "artifacts": sr.artifacts or [],
         }
-
     def _test_error(self, test_id: str, requirement: Optional[str], status: str, message: str) -> Dict[str, Any]:
         return {
             "id": test_id,
