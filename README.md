@@ -31,6 +31,9 @@ cdd analyze reference.pdf -o analysis/baseline/
 # Write contracts grounded in the analysis
 # ... edit contracts/project.yaml ...
 
+# Verify paths resolve
+cdd paths contracts/
+
 # Validate contracts
 cdd lint contracts/
 
@@ -47,11 +50,27 @@ cdd compare analysis/baseline/ analysis/output/
 | Command | Description |
 |---------|-------------|
 | `cdd spec --version` | Show spec/tool version |
+| `cdd paths <contracts/>` | Verify file paths in contracts resolve |
 | `cdd analyze <file> -o <dir>` | Extract baseline from PDF/HTML |
 | `cdd compare <baseline> <output>` | Compare two analyses |
 | `cdd lint <contracts/>` | Validate contract schema + coverage |
 | `cdd test <contracts/>` | Run contract tests |
 | `cdd coverage <contracts/>` | Requirement coverage report |
+
+### Paths
+
+```bash
+# Verify all file paths in contracts resolve correctly
+cdd paths contracts/
+
+# Single contract
+cdd paths contracts/feature.yaml
+
+# JSON output
+cdd paths contracts/ --json
+```
+
+Pre-gate check that catches path errors before running tests. Extracts paths from `files:` fields and shell command arguments, verifies they resolve relative to the contract directory.
 
 ### Analyze
 
@@ -132,6 +151,34 @@ cdd coverage contracts/ --strict
 | `sclang` | ⚠️ Stub | `render_nrt` | SuperCollider audio |
 
 **Note:** The `sclang` executor currently returns "not_implemented". Full NRT rendering support is planned for Phase 3.
+
+## Known Issues
+
+| Issue | Status | Workaround |
+|-------|--------|------------|
+| `cdd test file.yaml` runs all contracts in directory | Open | Use `--only T001` to filter, or test in isolated directory |
+| Static executor `$.file.content` returns null | Open | Use shell executor with grep instead |
+
+### Isolation Workaround
+
+When testing a single contract in a project with multiple contracts:
+
+```bash
+# Create isolated test environment
+mkdir -p /tmp/cdd-work/contracts
+cp contracts/feature.yaml /tmp/cdd-work/contracts/
+
+# Symlink source directories
+ln -s ~/project/src /tmp/cdd-work/src
+
+# Test in isolation
+cd /tmp/cdd-work
+cdd paths contracts/feature.yaml
+cdd test contracts/feature.yaml
+
+# Cleanup
+rm -rf /tmp/cdd-work
+```
 
 ## Spec Compatibility
 
