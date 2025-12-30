@@ -19,6 +19,7 @@ from cdd_tooling.lint import lint_contracts
 from cdd_tooling.runner import ContractRunner
 from cdd_tooling.spec import get_tool_version, load_spec_text
 from cdd_tooling.analyze import analyze_source
+from cdd_tooling.paths import verify_paths
 
 console = Console()
 
@@ -67,6 +68,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_compare.add_argument("generated", help="Generated analysis directory or structure.json")
     p_compare.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
 
+    # cdd paths
+    p_paths = sub.add_parser("paths", help="Verify all file paths in contracts resolve")
+    p_paths.add_argument("path", nargs="?", default="contracts", help="Contracts directory or file")
+    p_paths.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
+
     args = parser.parse_args(argv)
 
     if args.cmd == "spec":
@@ -81,6 +87,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         return cmd_analyze(args)
     if args.cmd == "compare":
         return cmd_compare(args)
+    if args.cmd == "paths":
+        return cmd_paths(args)
 
     parser.print_help()
     return 2
@@ -456,3 +464,62 @@ def _print_report(report: Dict[str, Any]) -> None:
             (r.get("message", "") or "")[:120],
         )
     console.print(t)
+
+
+def cmd_paths(args: argparse.Namespace) -> int:
+    """Verify all file paths in contracts resolve correctly."""
+    contracts_path = Path(args.path)
+
+    if not contracts_path.exists():
+        console.print(f"[red]Error: Path not found: {contracts_path}[/red]")
+        return 1
+
+    result = verify_paths(contracts_path)
+
+    if args.json:
+        console.print_json(json.dumps(result))
+    else:
+        _print_paths(result)
+
+    return 0 if result["ok"] else 1
+
+
+def _print_paths(result: Dict[str, Any]) -> None:
+    """Print path verification results."""
+    for contract_result in result["results"]:
+        console.print()
+        console.print("═" * 60)
+        console.print(f"  Path Verification: [bold]{contract_result['contract']}[/bold]")
+        console.print(f"  Contract: {contract_result['contract_path']}")
+        console.print("═" * 60)
+
+        passed = contract_result["passed"]
+        failed = contract_result["failed"]
+
+        if passed:
+            console.print(f"\n  [green]✓ {len(passed)} paths OK:[/green]")
+            for p in passed:
+                console.print(f"    [green]✓[/green] {p}")
+
+        if failed:
+            console.print(f"\n  [red]✗ {len(failed)} paths FAILED:[/red]")
+            for f in failed:
+                console.print(f"    [red]✗[/red] {f['path']}")
+                if f.get("suggestion"):
+                    console.print(f"      └─ Did you mean: [yellow]{f['suggestion']}[/yellow] ?")
+
+        console.print()
+        if contract_result["ok"]:
+            console.print(f"  RESULT: [green]PASS[/green] ({len(passed)} files)")
+        else:
+            console.print(f"  RESULT: [red]FAIL[/red] ({len(failed)} missing, {len(passed)} found)")
+
+    console.print()
+    if result["ok"]:
+        console.print("═" * 60)
+        console.print("  [green]ALL CONTRACTS PASSED PATH VERIFICATION[/green]")
+        console.print("═" * 60)
+    else:
+        console.print("═" * 60)
+        console.print("  [red]PATH VERIFICATION FAILED[/red] - Fix paths before running cdd test")
+        console.print("═" * 60)
