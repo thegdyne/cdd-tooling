@@ -3,8 +3,8 @@
 Future additions to the Contract-Driven Development spec and tooling.
 
 **Applies to spec version:** 1.1.5  
-**Tooling version:** 0.1.1  
-**Last updated:** 2025-12-29
+**Tooling version:** 0.1.3  
+**Last updated:** 2025-12-31
 
 ---
 
@@ -12,10 +12,12 @@ Future additions to the Contract-Driven Development spec and tooling.
 
 | Item | Status | Notes |
 |------|--------|-------|
-| `cdd analyze` (PDF) | ✅ Done (v1.1.4) | PyMuPDF extracts images + structure |
-| `cdd analyze` (HTML) | ✅ Done (v1.1.5) | Element counts, CSS classes, required elements |
-| `cdd compare` (PDF) | ✅ Done (v1.1.4) | Compare two PDF analyses |
+| `cdd analyze` (PDF) | ✅ Done (v0.1.0) | PyMuPDF extracts images + structure |
+| `cdd analyze` (HTML) | ✅ Done (v0.1.0) | Element counts, CSS classes, required elements |
+| `cdd analyze` (source) | ✅ Done (v0.1.2) | Frozen snapshot + PATTERNS.md template |
+| `cdd compare` (PDF) | ✅ Done (v0.1.0) | Compare two PDF analyses |
 | `cdd compare` (HTML) | ✅ Done (v0.1.1) | Compare two HTML analyses |
+| `cdd compare` (source) | ✅ Done (v0.1.2) | Hash-based comparison |
 | Mandatory Gates in spec | ✅ Done (v1.1.5) | G0-G3 definitions, sequence diagram |
 | Anti-Patterns in spec | ✅ Done (v1.1.5) | AP1-AP6 with examples |
 | Process Checkpoints | ✅ Done (v1.1.5) | Table of verification points |
@@ -47,6 +49,8 @@ Future additions to the Contract-Driven Development spec and tooling.
 | Shell executor | ✅ Done | Command execution with stdout/stderr capture |
 | Static executor (file scan) | ✅ Done | `matches`/`not_matches` regex assertions |
 | Report writer | ✅ Done | JSON output per schema_version 1.0 |
+| `cdd paths` | ✅ Done (v0.1.0) | Path verification before test |
+| `cdd isolate` | ✅ Done (v0.1.3) | Single contract testing in isolated workspace |
 | `sclang` executor | ⚠️ Stub | Placeholder - returns "not_implemented" |
 | Static executor (AST) | ⚠️ Stub | Returns empty AST - no parser implemented |
 
@@ -115,6 +119,12 @@ Future additions to the Contract-Driven Development spec and tooling.
 ---
 
 ## Design Decisions Log
+
+### Why `cdd isolate`?
+- `cdd test file.yaml` runs all contracts in directory (known issue)
+- Manual isolation required temp directories, symlinks, cleanup
+- Error-prone and tedious for iterative development
+- `cdd isolate` automates the entire pattern with safety checks
 
 ### Why Phase 0 before Phase 1?
 - Process failures revealed that analysis must come first
@@ -208,4 +218,4 @@ To propose additions:
 
 ---
 
-*Roadmap for CDD spec v1.1.5, tooling v0.1.1*
+*Roadmap for CDD spec v1.1.5, tooling v0.1.3*

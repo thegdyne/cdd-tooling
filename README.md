@@ -37,7 +37,10 @@ cdd paths contracts/
 # Validate contracts
 cdd lint contracts/
 
-# Run tests
+# Run a single contract in isolation
+cdd isolate contracts/feature.yaml
+
+# Run all tests
 cdd test contracts/
 
 # Compare output to baseline
@@ -55,6 +58,7 @@ cdd compare analysis/baseline/ analysis/output/
 | `cdd compare <baseline> <output>` | Compare two analyses |
 | `cdd lint <contracts/>` | Validate contract schema + coverage |
 | `cdd test <contracts/>` | Run contract tests |
+| `cdd isolate <contract>` | Run single contract in isolated workspace |
 | `cdd coverage <contracts/>` | Requirement coverage report |
 
 ### Paths
@@ -161,6 +165,51 @@ cdd test contracts/ --only T001
 cdd test contracts/ --json
 ```
 
+### Isolate
+
+Run a single contract in a clean, isolated workspace. Solves the problem of `cdd test` running all contracts in a directory.
+
+```bash
+# Run single contract in isolation
+cdd isolate contracts/feature.yaml
+
+# Verbose output (show setup steps)
+cdd isolate contracts/feature.yaml -v
+
+# Keep work directory after run (for debugging)
+cdd isolate contracts/feature.yaml --keep
+
+# Keep work directory only on failure
+cdd isolate contracts/feature.yaml --keep-on-fail
+
+# Preview without running (dry run)
+cdd isolate contracts/feature.yaml --dry-run
+
+# Only run path verification
+cdd isolate contracts/feature.yaml --paths-only
+
+# Custom work directory
+cdd isolate contracts/feature.yaml -w /tmp/my-test
+```
+
+**How it works:**
+1. Auto-detects project root (looks for `.cdd/`, `.git/`, or `src/` + `contracts/`)
+2. Creates temporary workspace in `/tmp/cdd-isolate-<hash>-<pid>/`
+3. Copies only the specified contract
+4. Symlinks required source directories
+5. Runs `cdd paths` then `cdd test`
+6. Cleans up (unless `--keep`)
+
+**Exit codes:**
+| Code | Meaning |
+|------|---------|
+| 0 | Paths and tests passed |
+| 1 | Test failure |
+| 2 | Path verification failed |
+| 3 | Contract parse error |
+| 4 | Project root not found |
+| 5 | Invalid source path |
+
 ### Coverage
 
 ```bash
@@ -186,29 +235,8 @@ cdd coverage contracts/ --strict
 
 | Issue | Status | Workaround |
 |-------|--------|------------|
-| `cdd test file.yaml` runs all contracts in directory | Open | Use `--only T001` to filter, or test in isolated directory |
+| `cdd test file.yaml` runs all contracts in directory | Fixed | Use `cdd isolate` or `--only T001` |
 | Static executor `$.file.content` returns null | Open | Use shell executor with grep instead |
-
-### Isolation Workaround
-
-When testing a single contract in a project with multiple contracts:
-
-```bash
-# Create isolated test environment
-mkdir -p /tmp/cdd-work/contracts
-cp contracts/feature.yaml /tmp/cdd-work/contracts/
-
-# Symlink source directories
-ln -s ~/project/src /tmp/cdd-work/src
-
-# Test in isolation
-cd /tmp/cdd-work
-cdd paths contracts/feature.yaml
-cdd test contracts/feature.yaml
-
-# Cleanup
-rm -rf /tmp/cdd-work
-```
 
 ## Spec Compatibility
 

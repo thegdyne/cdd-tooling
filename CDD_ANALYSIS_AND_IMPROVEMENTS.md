@@ -1,6 +1,6 @@
 # CDD Analysis and Improvement Proposal
 
-**Date:** 2025-12-29 (updated)  
+**Date:** 2025-12-31 (updated)  
 **Based on:** CDD v1.1.5 codebase analysis  
 **Problem Statement:** Contracts based on assumptions lead to iterative rework; gates without enforcement get skipped
 
@@ -10,9 +10,12 @@
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| `cdd analyze` (PDF) | ✅ Done | `src/cdd/analyze/pdf.py` |
-| `cdd analyze` (HTML) | ✅ Done | `src/cdd/analyze/html.py` |
+| `cdd analyze` (PDF) | ✅ Done | `src/cdd_tooling/analyze/pdf.py` |
+| `cdd analyze` (HTML) | ✅ Done | `src/cdd_tooling/analyze/html.py` |
+| `cdd analyze` (source) | ✅ Done | `src/cdd_tooling/analyze/source.py` |
 | `cdd compare` | ✅ Done | Compare two analyses |
+| `cdd paths` | ✅ Done | `src/cdd_tooling/paths/` |
+| `cdd isolate` | ✅ Done | `src/cdd_tooling/isolate/` |
 | `source_ref` field | 🔲 TODO | Links requirements to analysis |
 | `visual_ref` field | 🔲 TODO | Links to reference images |
 | `cdd validate` command | 🔲 TODO | Check source_refs exist |
@@ -52,7 +55,10 @@
 - ✅ Spec version compatibility checking
 - ✅ PDF analysis (`cdd analyze *.pdf`)
 - ✅ HTML analysis (`cdd analyze *.html`)
+- ✅ Source analysis (`cdd analyze *.py`, `*.js`, etc.)
 - ✅ Analysis comparison (`cdd compare`)
+- ✅ Path verification (`cdd paths`)
+- ✅ Isolated contract testing (`cdd isolate`)
 
 **Code Quality:**
 - Clean separation: cli.py → runner.py → executors → assertions
@@ -321,7 +327,8 @@ Ungrounded requirements are assumptions. Assumptions cause rework.
 │     Implementation guided by source_refs and analysis artifacts             │
 │                                                                             │
 │  7. TEST (G2)                                                               │
-│     $ cdd test contracts/                                                   │
+│     $ cdd isolate contracts/feature.yaml   # Single contract                │
+│     $ cdd test contracts/                   # All contracts                 │
 │     → Tests can reference same analysis for comparison                      │
 │                                                                             │
 │  8. FREEZE (G3)                                                             │
@@ -407,7 +414,10 @@ requirements:
 |------|--------|--------|--------|
 | `cdd analyze` (PDF) | 2 days | High | ✅ Done |
 | `cdd analyze` (HTML) | 1 day | High | ✅ Done |
+| `cdd analyze` (source) | 1 day | High | ✅ Done |
 | `cdd compare` | 0.5 day | Medium | ✅ Done |
+| `cdd paths` | 0.5 day | High | ✅ Done |
+| `cdd isolate` | 1 day | High | ✅ Done |
 | `source_ref` field in schema | 1 day | High | 🔲 TODO |
 | `sources` section in project | 0.5 day | High | 🔲 TODO |
 | `cdd validate` command | 1 day | High | 🔲 TODO |
@@ -498,9 +508,13 @@ $ cdd lint contracts/
 ### Step 5: Implement and Test
 
 ```bash
-$ cdd test contracts/
+# Test single contract in isolation
+$ cdd isolate contracts/pdf_layout.yaml -v
 ✅ T001: field_dimensions_match PASS
 ✅ T002: box_borders_present PASS
+
+# Or test all contracts
+$ cdd test contracts/
 ```
 
 ### Step 6: Freeze and Deploy
@@ -520,7 +534,8 @@ Ready to deploy.
 
 | Problem | Solution | Status |
 |---------|----------|--------|
-| Contracts based on assumptions | `cdd analyze` extracts evidence first | ✅ PDF/HTML done |
+| Contracts based on assumptions | `cdd analyze` extracts evidence first | ✅ PDF/HTML/source done |
+| Testing single contracts tedious | `cdd isolate` automates isolation | ✅ Done |
 | No source validation | `source_ref` field links requirements to artifacts | 🔲 TODO |
 | Visual specs in prose | `visual_ref` + region coordinates | 🔲 TODO |
 | Vague language passes lint | Assumption language detection | 🔲 TODO |
