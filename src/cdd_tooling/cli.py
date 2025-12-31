@@ -20,6 +20,12 @@ from cdd_tooling.runner import ContractRunner
 from cdd_tooling.spec import get_tool_version, load_spec_text
 from cdd_tooling.analyze import analyze_source
 from cdd_tooling.paths import verify_paths
+from cdd_tooling.isolate import (
+    run_isolate, setup_work_dir, cleanup_work_dir,
+    EXIT_SUCCESS, EXIT_TEST_FAILURE, EXIT_PATH_FAILURE,
+    EXIT_PARSE_ERROR, EXIT_NO_PROJECT_ROOT, EXIT_INVALID_PATH,
+    IsolateContext, read_marker_token
+)
 
 console = Console()
 
@@ -73,6 +79,17 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_paths.add_argument("path", nargs="?", default="contracts", help="Contracts directory or file")
     p_paths.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
 
+    # cdd isolate
+    p_isolate = sub.add_parser("isolate", help="Execute single contract in isolated workspace")
+    p_isolate.add_argument("contract", help="Path to contract YAML file")
+    p_isolate.add_argument("--project", "-p", help="Project root directory")
+    p_isolate.add_argument("--keep", "-k", action="store_true", help="Keep work directory after run")
+    p_isolate.add_argument("--keep-on-fail", action="store_true", help="Keep work dir only on failure")
+    p_isolate.add_argument("--work-dir", "-w", help="Custom work directory")
+    p_isolate.add_argument("--verbose", "-v", action="store_true", help="Show detailed operations")
+    p_isolate.add_argument("--paths-only", action="store_true", help="Only run path verification")
+    p_isolate.add_argument("--dry-run", action="store_true", help="Print plan and exit")
+
     args = parser.parse_args(argv)
 
     if args.cmd == "spec":
@@ -89,6 +106,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         return cmd_compare(args)
     if args.cmd == "paths":
         return cmd_paths(args)
+    if args.cmd == "isolate":
+        return cmd_isolate(args)
 
     parser.print_help()
     return 2
@@ -593,3 +612,114 @@ def _print_paths(result: Dict[str, Any]) -> None:
         console.print("═" * 60)
         console.print("  [red]PATH VERIFICATION FAILED[/red] - Fix paths before running cdd test")
         console.print("═" * 60)
+
+
+def cmd_isolate(args: argparse.Namespace) -> int:
+    """Execute a single contract in an isolated workspace."""
+    import os
+
+    # Initialize
+    result = run_isolate(
+        contract_path=args.contract,
+        project=args.project,
+        keep=args.keep,
+        keep_on_fail=getattr(args, 'keep_on_fail', False),
+        work_dir=args.work_dir,
+        verbose=args.verbose,
+        paths_only=args.paths_only,
+        dry_run=args.dry_run,
+    )
+
+    if result["exit_code"] != EXIT_SUCCESS:
+        console.print(f"[red]Error: {result.get('error', 'Unknown error')}[/red]")
+        return result["exit_code"]
+
+    ctx = result["context"]
+    contract_name = result["contract_name"]
+
+    # Print header
+    console.print()
+    console.print("=" * 45)
+    console.print(f"CDD Isolate: [bold]{ctx.contract_path.name}[/bold]")
+    console.print(f"Project: {ctx.project_root}")
+    console.print(f"Work:    {ctx.work_dir}")
+    links_str = ", ".join(sorted(ctx.link_roots)) if ctx.link_roots else "(none)"
+    console.print(f"Links:   {links_str}")
+    console.print("=" * 45)
+
+    # Dry run - just show plan
+    if args.dry_run:
+        console.print()
+        console.print("[dim]Dry run - no changes made[/dim]")
+        return EXIT_SUCCESS
+
+    # Setup work directory
+    try:
+        if args.verbose:
+            console.print("\n[dim]Setting up work directory:[/dim]")
+        marker_token = setup_work_dir(ctx, console)
+        ctx = ctx._replace(marker_token=marker_token)
+    except ValueError as e:
+        console.print(f"[red]Error: {e}[/red]")
+        return EXIT_INVALID_PATH
+    except Exception as e:
+        console.print(f"[red]Error setting up work directory: {e}[/red]")
+        return EXIT_INVALID_PATH
+
+    exit_code = EXIT_SUCCESS
+    original_cwd = Path.cwd()
+
+    try:
+        # Change to work directory
+        os.chdir(ctx.work_dir)
+
+        # Run path verification
+        console.print()
+        paths_result = verify_paths(Path("contracts"))
+
+        if not paths_result["ok"]:
+            _print_paths(paths_result)
+            exit_code = EXIT_PATH_FAILURE
+        elif args.paths_only:
+            _print_paths(paths_result)
+            console.print("[green]✓ Path verification passed[/green]")
+        else:
+            # Run tests
+            console.print()
+            contracts_path = Path("contracts")
+
+            registry = ExecutorRegistry.discover()
+            runner = ContractRunner(
+                executors=registry,
+                artifacts_root=Path("artifacts"),
+            )
+            report = runner.run(contracts_path)
+            _print_report(report)
+
+            summ = report.get("summary", {})
+            if summ.get("failed", 0) > 0 or summ.get("error", 0) > 0:
+                exit_code = EXIT_TEST_FAILURE
+
+    except Exception as e:
+        console.print(f"[red]Error during execution: {e}[/red]")
+        exit_code = EXIT_TEST_FAILURE
+
+    finally:
+        # Restore original directory
+        os.chdir(original_cwd)
+
+        # Cleanup
+        cleaned = cleanup_work_dir(ctx, exit_code, console)
+
+        # Print footer
+        console.print()
+        console.print("=" * 45)
+        result_str = "[green]PASS[/green]" if exit_code == 0 else "[red]FAIL[/red]"
+        console.print(f"Result: {result_str}")
+        if cleaned:
+            console.print(f"Cleaned: {ctx.work_dir}")
+        else:
+            console.print(f"Kept: {ctx.work_dir}")
+        console.print("=" * 45)
+
+    return exit_code
