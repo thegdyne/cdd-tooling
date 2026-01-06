@@ -8,7 +8,6 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import yaml
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -17,7 +16,7 @@ from cdd_tooling.coverage import compute_coverage
 from cdd_tooling.executors.registry import ExecutorRegistry
 from cdd_tooling.lint import lint_contracts
 from cdd_tooling.runner import ContractRunner
-from cdd_tooling.spec import get_tool_version, load_spec_text
+from cdd_tooling.spec import get_spec_doc_version, load_spec_text
 from cdd_tooling.analyze import analyze_source
 from cdd_tooling.paths import verify_paths
 from cdd_tooling.isolate import (
@@ -128,12 +127,12 @@ def contract_coverage() -> None:
 
 def cmd_spec(args: argparse.Namespace) -> int:
     if args.version:
-        console.print(get_tool_version())
+        print(get_spec_doc_version())
         return 0
     if args.do_print:
         console.print(load_spec_text())
         return 0
-    console.print(get_tool_version())
+    print(get_spec_doc_version())
     return 0
 
 
@@ -723,3 +722,6 @@ def cmd_isolate(args: argparse.Namespace) -> int:
         console.print("=" * 45)
 
     return exit_code
+
+if __name__ == "__main__":
+    raise SystemExit(main())
