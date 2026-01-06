@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 .idea/
 dist/
+
+# local tooling artifacts
+.context-cache/
+PROJECT_CONTEXT.md
